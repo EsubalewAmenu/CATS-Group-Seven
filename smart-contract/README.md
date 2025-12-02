@@ -66,6 +66,20 @@ aiken docs
 deno run --allow-net --allow-read --allow-env --allow-sys main.ts
 ```
 
+## API body
+POST request to http://localhost:8000/mint to mint new token with the below body
+
+```
+{
+  "blockfrostKey": "preprod...",
+  "secretSeed": "your seed phrase...",
+  "tokenName": "MyAikenNFT",
+  "metadata": { "name": "Aiken NFT #1", "image": "ipfs://..." },
+  "cborHex": "5908..." // The 'compiledCode' string from aiken's plutus.json
+}
+```
+
+
 ## Resources
 
 Find more on the [Aiken's user manual](https://aiken-lang.org).
