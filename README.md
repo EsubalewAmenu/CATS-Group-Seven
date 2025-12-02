@@ -118,7 +118,3 @@ The system follows a 3-tier architecture integrated with the Cardano Blockchain:
 ## 📄 License
 
 This project is licensed under the [MIT License](https://www.google.com/search?q=LICENSE).
-
-````
-
----

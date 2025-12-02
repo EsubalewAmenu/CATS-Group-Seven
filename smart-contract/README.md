@@ -1,85 +1,48 @@
-# smart-contract
+# ☕ smart-contract Module: Smart Contracts & Minting API
 
-Write validators in the `validators` folder, and supporting functions in the `lib` folder using `.ak` as a file extension.
+This directory contains the **Aiken** smart contract source code and the **Deno** API server used to mint Coffee NFTs.
 
-```aiken
-validator my_first_validator {
-  spend(_datum: Option<Data>, _redeemer: Data, _output_reference: Data, _context: Data) {
-    True
-  }
-}
-```
+## Tech Stack
+- **Language:** Aiken (v1.1+)
+- **Runtime:** Deno (v1.46+)
+- **Library:** Lucid Evolution (@lucid-evolution/lucid)
+- **Network:** Cardano Preprod
 
-## Building
+## Setup
 
-```sh
-aiken build
-```
+1. **Install Dependencies:**
+   Ensure Deno and Aiken are installed.
 
-## Configuring
+2. **Configuration:**
+   The `main.ts` expects a JSON body containing:
+   - `blockfrostKey`: Your Preprod project ID.
+   - `secretSeed`: The mnemonic of the minting wallet.
 
-**aiken.toml**
-```toml
-[config.default]
-network_id = 41
-```
+3. **Build Contract:**
+   ```bash
+   aiken build
+````
 
-Or, alternatively, write conditional environment modules under `env`.
+*This generates `plutus.json` containing the CBOR hex needed for the API.*
 
-## Testing
+4.  **Run Server:**
+    ```bash
+    deno run --allow-net --allow-read --allow-env --allow-sys main.ts
+    ```
 
-You can write tests in any module using the `test` keyword. For example:
+## API Endpoints
 
-```aiken
-use config
+### `POST /mint`
 
-test foo() {
-  config.network_id + 1 == 42
-}
-```
+Mints a new Coffee NFT.
 
-To run all tests, simply do:
-
-```sh
-aiken check
-```
-
-To run only tests matching the string `foo`, do:
-
-```sh
-aiken check -m foo
-```
-
-## Documentation
-
-If you're writing a library, you might want to generate an HTML documentation for it.
-
-Use:
-
-```sh
-aiken docs
-```
-
-## How to start the server
-
-```
-deno run --allow-net --allow-read --allow-env --allow-sys main.ts
-```
-
-## API body
-POST request to http://localhost:8000/mint to mint new token with the below body
-
-```
-{
-  "blockfrostKey": "preprod...",
-  "secretSeed": "your seed phrase...",
-  "tokenName": "MyAikenNFT",
-  "metadata": { "name": "Aiken NFT #1", "image": "ipfs://..." },
-  "cborHex": "5908..." // The 'compiledCode' string from aiken's plutus.json
-}
-```
-
-
-## Resources
-
-Find more on the [Aiken's user manual](https://aiken-lang.org).
+  - **Body:**
+    ```json
+    {
+      "blockfrostKey": "preprod...",
+      "secretSeed": "your seed phrase...",
+      "tokenName": "MyAikenNFT",
+      "metadata": { "name": "Aiken NFT #1", "image": "ipfs://..." },
+      "cborHex": "5908..." // The 'compiledCode' string from aiken's plutus.json
+    }
+    ```
