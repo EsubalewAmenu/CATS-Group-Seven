@@ -1,4 +1,9 @@
 import { Application, Router } from "https://deno.land/x/oak@v12.6.1/mod.ts";
+import {
+  Lucid,
+  Blockfrost,
+  fromText,
+} from "npm:@lucid-evolution/lucid@latest";
 
 const router = new Router();
 
@@ -14,6 +19,20 @@ router.post("/mint", async (context) => {
       new Blockfrost("https://cardano-preprod.blockfrost.io/api/v0", body.blockfrostKey),
       "Preprod"
     );
+
+    lucid.selectWallet.fromSeed(body.secretSeed);
+
+    const tokenName = body.tokenName;
+    const tn = fromText(tokenName); 
+
+    const addr: Address = await lucid.wallet().address();
+    console.log("Wallet Address:", addr);
+
+    const utxos = await lucid.utxosAt(addr);
+    if (utxos.length === 0) throw new Error("No UTXOs");
+
+    const utxo = utxos[0];
+    console.log("Selected Param UTXO:", utxo.txHash);
 
   } catch (error) {
     console.error("FULL ERROR:", error); // This prints the stack trace if it fails again
