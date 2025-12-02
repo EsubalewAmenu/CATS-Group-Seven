@@ -1,4 +1,3 @@
-````markdown
 # ☕ CATS Group Seven - Coffee Supply Chain dApp
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
@@ -12,7 +11,7 @@ Welcome to the **CATS Group Seven** repository. This project is a decentralized 
 
 This repository is organized into three main modules. Click on the folder names to navigate to their specific documentation.
 
-```text
+```
 CATS-Group-Seven/
 ├── 📂 smart-contract/          # Smart Contracts (Aiken) & Minting API (Deno/Lucid)
 ├── 📂 frontend/        # Web User Interface (React/Next.js)
