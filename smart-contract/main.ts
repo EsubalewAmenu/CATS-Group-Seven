@@ -67,6 +67,16 @@ router.post("/mint", async (context) => {
       },
     };
     
+    console.log("Building transaction...");    
+    let txBuilder = lucid.newTx()
+      .mintAssets({ [unit]: 1n }, Data.void()) 
+      .attach.MintingPolicy(nftPolicy) 
+      .attachMetadata(721, metadata)   
+      .collectFrom([utxo]);
+
+    const tx = await txBuilder.complete();
+    console.log("Transaction built successfully.");
+
   } catch (error) {
     console.error("FULL ERROR:", error); // This prints the stack trace if it fails again
     context.response.status = 500;
