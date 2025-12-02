@@ -21,7 +21,7 @@ This directory contains the **Aiken** smart contract source code and the **Deno*
 3. **Build Contract:**
    ```bash
    aiken build
-````
+  ````
 
 *This generates `plutus.json` containing the CBOR hex needed for the API.*
 
