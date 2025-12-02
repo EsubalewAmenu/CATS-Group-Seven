@@ -77,6 +77,18 @@ router.post("/mint", async (context) => {
     const tx = await txBuilder.complete();
     console.log("Transaction built successfully.");
 
+    const signedTx = await tx.sign.withWallet().complete();
+    console.log("Transaction signed.");
+    
+    const txHash = await signedTx.submit();
+    console.log("Transaction submitted:", txHash);
+
+    context.response.body = {
+      status: "success",
+      txHash,
+      unit,
+      policyId,
+    };
   } catch (error) {
     console.error("FULL ERROR:", error); // This prints the stack trace if it fails again
     context.response.status = 500;
