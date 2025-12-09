@@ -103,12 +103,13 @@ export interface JourneyStep {
 export interface HarvestData {
   cropType: 'coffee' | 'tea' | 'flowers';
   weight: number;
-  location: string;
   variety: string;
   harvestDate: string;
   process: string;
   elevation: string;
   gps: string;
+  farmerName: string;
+  farmerPhotoUrl?: string;
 }
 
 export interface StatusUpdateData {

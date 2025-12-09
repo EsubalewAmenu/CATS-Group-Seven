@@ -6,7 +6,7 @@ import BottomNav from './BottomNav';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-  role: 'farmer' | 'processor' | 'consumer';
+  role: 'union' | 'processor' | 'consumer';
   title: string;
   subtitle?: string;
 }
@@ -16,18 +16,18 @@ export default function DashboardLayout({ children, role, title, subtitle }: Das
   const location = useLocation();
 
   const roleBadges = {
-    farmer: 'bg-emerald-100 text-emerald-800',
+    union: 'bg-emerald-100 text-emerald-800',
     processor: 'bg-blue-100 text-blue-800',
     consumer: 'bg-purple-100 text-purple-800'
   };
 
   const getNavItems = () => {
     switch (role) {
-      case 'farmer':
+      case 'union':
         return [
-          { id: 'batches', path: '/farmer/batches', label: 'Batches', icon: '📦' },
-          { id: 'new', path: '/farmer/new-harvest', label: 'New Harvest', icon: '🌱' },
-          { id: 'mint', path: '/farmer/mint', label: 'Mint', icon: '🪙' }
+          { id: 'batches', path: '/union/batches', label: 'Batches', icon: '📦' },
+          { id: 'new', path: '/union/new-harvest', label: 'New Harvest', icon: '🌱' },
+          { id: 'mint', path: '/union/mint', label: 'Mint', icon: '🪙' }
         ];
       case 'processor':
         return [

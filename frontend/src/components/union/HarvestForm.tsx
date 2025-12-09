@@ -3,7 +3,7 @@ import { HarvestData } from '../../types/supplychain';
 import { useBatches } from '../../hooks/useBatches';
 import { COFFEE_VARIETIES, PROCESS_METHODS } from '../../utils/constants';
 import LoadingSpinner from '../common/LoadingSpinner';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { cn } from '../../utils/cn';
 
@@ -18,15 +18,21 @@ export default function HarvestForm({ onSuccess }: HarvestFormProps) {
   const [formData, setFormData] = useState<HarvestData>({
     cropType: 'coffee', // Default crop type is always coffee
     weight: 0,
-    location: '',
     variety: COFFEE_VARIETIES[0],
     harvestDate: new Date().toISOString().split('T')[0],
     process: PROCESS_METHODS[0],
     elevation: '',
-    gps: ''
+    gps: '',
+    farmerName: '',
+    farmerPhotoUrl: ''
   });
 
   const handleSubmit = async () => {
+    if (!formData.farmerName.trim()) {
+      alert('Please enter the farmer\'s name');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await addBatch(formData);
@@ -46,7 +52,57 @@ export default function HarvestForm({ onSuccess }: HarvestFormProps) {
   const nextStep = () => setStep(s => s + 1);
   const prevStep = () => setStep(s => s - 1);
 
+  // Step 1: Farmer Information
   const renderStep1 = () => (
+    <div className="space-y-6">
+      <h3 className="text-lg font-semibold text-stone-800">Farmer Information</h3>
+      <p className="text-sm text-stone-500">Enter the details of the farmer who produced this harvest</p>
+
+      <div>
+        <label className="block text-sm font-medium text-stone-700 mb-2">Farmer Name *</label>
+        <input
+          type="text"
+          value={formData.farmerName}
+          onChange={(e) => handleChange('farmerName', e.target.value)}
+          className="w-full p-4 border border-stone-200 rounded-xl text-lg focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none"
+          placeholder="e.g. Abebe Bekele"
+          required
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-stone-700 mb-2">Farmer Photo URL (Optional)</label>
+        <input
+          type="url"
+          value={formData.farmerPhotoUrl || ''}
+          onChange={(e) => handleChange('farmerPhotoUrl', e.target.value)}
+          className="w-full p-4 border border-stone-200 rounded-xl focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none"
+          placeholder="https://example.com/photo.jpg"
+        />
+        {formData.farmerPhotoUrl && (
+          <div className="mt-3 flex justify-center">
+            <img
+              src={formData.farmerPhotoUrl}
+              alt="Farmer preview"
+              className="w-24 h-24 rounded-full object-cover border-2 border-stone-200"
+              onError={(e) => (e.currentTarget.style.display = 'none')}
+            />
+          </div>
+        )}
+      </div>
+
+      <Button
+        onClick={nextStep}
+        className="w-full h-12 text-lg"
+        disabled={!formData.farmerName.trim()}
+      >
+        Next: Harvest Details
+      </Button>
+    </div>
+  );
+
+  // Step 2: Harvest Details
+  const renderStep2 = () => (
     <div className="space-y-6">
       <h3 className="text-lg font-semibold text-stone-800">Harvest Details</h3>
 
@@ -88,11 +144,15 @@ export default function HarvestForm({ onSuccess }: HarvestFormProps) {
         </select>
       </div>
 
-      <Button onClick={nextStep} className="w-full h-12 text-lg">Next: Location</Button>
+      <div className="flex space-x-3">
+        <Button variant="outline" onClick={prevStep} className="flex-1 h-12">Back</Button>
+        <Button onClick={nextStep} className="flex-[2] h-12">Next: Location</Button>
+      </div>
     </div>
   );
 
-  const renderStep2 = () => (
+  // Step 3: Location (GPS only, no region field)
+  const renderStep3 = () => (
     <div className="space-y-6">
       <h3 className="text-lg font-semibold text-stone-800">Location Data</h3>
 
@@ -115,13 +175,13 @@ export default function HarvestForm({ onSuccess }: HarvestFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-stone-700 mb-2">Region / Zone</label>
+        <label className="block text-sm font-medium text-stone-700 mb-2">Elevation (optional)</label>
         <input
           type="text"
-          value={formData.location}
-          onChange={(e) => handleChange('location', e.target.value)}
+          value={formData.elevation}
+          onChange={(e) => handleChange('elevation', e.target.value)}
           className="w-full p-4 border border-stone-200 rounded-xl"
-          placeholder="e.g. Guji Zone"
+          placeholder="e.g. 1,800m"
         />
       </div>
 
@@ -139,22 +199,26 @@ export default function HarvestForm({ onSuccess }: HarvestFormProps) {
       <Card className="border-0 shadow-none md:border md:shadow-sm">
         <CardHeader className="text-center pb-2">
           <div className="flex justify-center space-x-2 mb-4">
-            {[1, 2].map((i) => (
+            {[1, 2, 3].map((i) => (
               <div
                 key={i}
                 className={cn(
-                  "h-2 w-24 rounded-full transition-colors",
+                  "h-2 w-16 rounded-full transition-colors",
                   step >= i ? "bg-emerald-500" : "bg-stone-200"
                 )}
               />
             ))}
           </div>
           <CardTitle>New Coffee Harvest</CardTitle>
+          {formData.farmerName && (
+            <p className="text-sm text-stone-500 mt-1">Farmer: {formData.farmerName}</p>
+          )}
         </CardHeader>
 
         <CardContent>
           {step === 1 && renderStep1()}
           {step === 2 && renderStep2()}
+          {step === 3 && renderStep3()}
         </CardContent>
       </Card>
     </div>

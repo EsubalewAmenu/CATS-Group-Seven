@@ -39,8 +39,8 @@ function mapSupabaseBatchToAppBatch(
 
     const farmer: Farmer = {
         id: batch.users.id,
-        name: batch.users.full_name,
-        region: batch.users.region || '',
+        name: (batch as any).farmer_name || batch.users.full_name,
+        region: '',
         elevation: batch.elevation || '',
         gps: (batch.location as any)?.gps_string || '',
         walletAddress: batch.users.cardano_wallet_address || '',
@@ -161,9 +161,10 @@ export async function createBatch(harvestData: HarvestData): Promise<Batch> {
             process_method: harvestData.process,
             elevation: harvestData.elevation,
             location: {
-                gps_string: harvestData.gps,
-                region: harvestData.location
+                gps_string: harvestData.gps
             },
+            farmer_name: harvestData.farmerName,
+            farmer_photo_url: harvestData.farmerPhotoUrl || null,
             qr_code: `QR-${Date.now()}`, // Simple generation
             harvest_date: new Date().toISOString(), // Or harvestData.harvestDate if provided
             status: 'harvested'
@@ -180,7 +181,7 @@ export async function createBatch(harvestData: HarvestData): Promise<Batch> {
         batch_id: (batch as any).id,
         actor_id: farmerId,
         action_type: 'HARVESTED',
-        actor_role: 'farmer',
+        actor_role: 'union',
         update_data: { weight: harvestData.weight },
         notes: 'Initial harvest'
     } as any);
@@ -188,7 +189,7 @@ export async function createBatch(harvestData: HarvestData): Promise<Batch> {
     // Return the full batch object
     const newBatch = await getBatchById((batch as any).id);
     if (!newBatch) throw new ApiError('Failed to retrieve created batch');
-    
+
     return newBatch;
 }
 
@@ -204,13 +205,13 @@ export async function updateBatchStatus(updateData: StatusUpdateData): Promise<B
     let actorRole = 'processor'; // Default or fetch from profile
 
     if (!actorId) {
-         // Fallback
+        // Fallback
         const { data: actors } = await supabase
             .from('users')
             .select('id, role')
-            .eq('role', 'processor') 
+            .eq('role', 'processor')
             .limit(1);
-        
+
         const fallbackActor = (actors as any)?.[0];
         if (fallbackActor) {
             actorId = fallbackActor.id;
@@ -248,7 +249,7 @@ export async function updateBatchStatus(updateData: StatusUpdateData): Promise<B
 
     // 3. Update batch status and weight if needed
     const batchUpdates: Database['public']['Tables']['batches']['Update'] = {};
-    
+
     // Map action to batch status
     const statusMap: Record<string, string> = {
         'PROCESSING_STARTED': 'processing',

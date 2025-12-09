@@ -31,13 +31,13 @@ export default function RoleSelector() {
 
   const roles = [
     {
-      id: 'farmer',
-      title: 'Farmer',
-      description: 'Register harvest batches and track your produce on blockchain',
-      icon: '👨‍🌾',
+      id: 'union',
+      title: 'Farmer Union',
+      description: 'Register harvest batches on behalf of farmers and track produce',
+      icon: '🏛️',
       color: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:border-emerald-500',
       buttonColor: 'bg-emerald-600 hover:bg-emerald-700',
-      features: ['Register batches', 'Mint tokens', 'Track journey']
+      features: ['Register batches for farmers', 'Mint tokens', 'Track journey']
     },
     {
       id: 'processor',
