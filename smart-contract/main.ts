@@ -36,9 +36,19 @@ router.post("/mint", async (context) => {
     console.log("Wallet Address:", addr);
 
     const utxos = await lucid.utxosAt(addr);
+
+    let utxo = utxos.find(u => u.assets["lovelace"] > 5000000n && Object.keys(u.assets).length === 1);
+
+    if (!utxo) {
+        console.warn("⚠️ No pure ADA UTxO found. Using the first available (might be heavy).");
+        utxo = utxos[0];
+    }
+
+    if (!utxo) throw new Error("No UTXOs available in wallet!");
+
+    console.log("Selected Param UTXO:", utxo.txHash, "#", utxo.outputIndex);
     if (utxos.length === 0) throw new Error("No UTXOs");
 
-    const utxo = utxos[0];
     console.log("Selected Param UTXO:", utxo.txHash);
 
     const Params = Data.Tuple([Data.Bytes(), Data.Integer(), Data.Bytes()]);
@@ -72,7 +82,8 @@ router.post("/mint", async (context) => {
       .mintAssets({ [unit]: 1n }, Data.void()) 
       .attach.MintingPolicy(nftPolicy) 
       .attachMetadata(721, metadata)   
-      .collectFrom([utxo]);
+      .collectFrom([utxo])
+      .addSigner(addr);
 
     const tx = await txBuilder.complete();
     console.log("Transaction built successfully.");
