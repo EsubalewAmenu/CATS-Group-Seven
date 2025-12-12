@@ -60,13 +60,55 @@ This endpoint registers a new coffee batch and creates its digital identity.
 }
 ```
 
+---
+
+## Asset Transfer
+
+### Transfer Asset
+
+<Note>
+This endpoint transfers a previously minted coffee batch to another address (e.g., washing station) and updates its metadata with new status information.
+</Note>
+
+**Endpoint:** `POST /transfer`
+
+### Request Body
+
+```json
+{
+  "blockfrostKey": "preprod2LaUuRkKafgzxoHHMuUTEnQOf5hmd4Z0",
+  "secretSeed": "cabin family silk spring chalk noble purse riot spend actual indicate age simple broom fame wreck fan relax love shallow bird much invite trumpet",
+  "metadata": {
+    "status": "washed",
+    "description": "test",
+    "note": "test2"
+  },
+  "assetUnit": "ff1f7b705285479fde3de1bd77571ba9141c1302b375937b00b7a17a4d7941696b656e4e4654",
+  "recipientAddress": "addr_test1qzxpp07tfye3mmun65wr3e8npj5etp2lrg802rrjgffttx3u33d6t2t2hxvu0h50q3jwfq6ykqw7ex8mkslpn5rqdu6qugnqpk"
+}
+```
+
+### Response (200 OK)
+
+```json
+{
+    "status": "success",
+    "txHash": "1a9a1fd62ae9c09e7e3cbf9ef8153814ead251038fb9031f7b5f2ae6bffed44d",
+    "message": "Asset transferred with metadata"
+}
+```
+
+### Error Response (500 Internal Server Error)
+
+If the `assetUnit` is incorrect or not available in the sender's wallet, you'll receive a detailed error response indicating validation failures.
+
+
 ## Upcoming Features
 
 This is a **work-in-progress API** with additional endpoints currently under development. The following features will be added soon:
 
 ### Supply Chain Operations
 
-- **Transfer to Washer** - Record the movement of harvested coffee to washing stations
 - **Transport Management** - Track coffee shipments between locations
 - **Processing Stages** - Document drying, milling, and roasting operations
 - **Quality Control** - Log quality assessments and certifications

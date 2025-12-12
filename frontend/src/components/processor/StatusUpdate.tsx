@@ -1,313 +1,244 @@
 import React, { useState, useEffect } from 'react';
-import { Batch, StatusUpdateData } from '../../types/supplychain';
-import { useBatches } from '../../hooks/useBatches';
-import { getBatchById } from '../../services/api';
+import { useNavigate } from 'react-router-dom';
+import { Batch } from '../../types/supplychain';
+import { transferToken, getCardanoScanTxUrl, MintError } from '../../services/cardanoApi';
 import LoadingSpinner from '../common/LoadingSpinner';
+import { Card, CardContent } from '../ui/Card';
+import { Button } from '../ui/Button';
 
 interface StatusUpdateProps {
-  batchId: string | null;
-  onBatchChange: (batchId: string) => void;
+  batch: Batch | null;
+  onSuccess?: () => void;
 }
 
-const PROCESSING_ACTIONS = [
-  { value: 'PROCESSING_STARTED', label: 'Start Processing', description: 'Begin washing/drying process' },
-  { value: 'PROCESSING_COMPLETE', label: 'Complete Processing', description: 'Finish processing stage' },
-  { value: 'QUALITY_CHECKED', label: 'Quality Check', description: 'Perform quality assessment' },
-  { value: 'IN_TRANSIT', label: 'Ready for Export', description: 'Prepare for shipment' }
+const PROCESSING_STATUSES = [
+  { value: 'washed', label: 'Washed', description: 'Beans have been washed and cleaned' },
+  { value: 'dried', label: 'Dried', description: 'Beans have been dried to target moisture' },
+  { value: 'milled', label: 'Milled', description: 'Beans have been hulled and polished' },
+  { value: 'graded', label: 'Graded', description: 'Beans have been sorted and graded' },
+  { value: 'exported', label: 'Ready for Export', description: 'Beans are packaged and ready to ship' }
 ];
 
-export default function StatusUpdate({ batchId, onBatchChange }: StatusUpdateProps) {
-  const { updateBatch } = useBatches();
-  const [batch, setBatch] = useState<Batch | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+export default function StatusUpdate({ batch, onSuccess }: StatusUpdateProps) {
+  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState<StatusUpdateData>({
-    batchId: batchId || '',
-    action: 'PROCESSING_STARTED',
-    newWeight: undefined,
-    moistureContent: '',
-    cuppingScore: undefined,
-    notes: ''
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    status: 'washed',
+    description: '',
+    note: ''
   });
 
-  const completedActions = batch?.journey.map(step => step.action) || [];
+  if (!batch) {
+    return (
+      <Card className="p-8 text-center">
+        <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span className="text-2xl">📦</span>
+        </div>
+        <h3 className="text-xl font-semibold text-gray-700 mb-2">No Token Selected</h3>
+        <p className="text-gray-500 mb-4">
+          Please select a minted token from the list to update its status
+        </p>
+        <Button onClick={() => navigate('/processor/tokens')}>
+          View Tokens
+        </Button>
+      </Card>
+    );
+  }
 
-  // Define strict order of operations
-  const actionOrder = PROCESSING_ACTIONS.map(a => a.value);
+  // Check if batch has assetUnit for transfer
+  const assetUnit = batch.mintUnit;
 
-  // Find the next expected action
-  const nextAction = PROCESSING_ACTIONS.find(a => !completedActions.includes(a.value));
-
-  // Check if fully processed
-  const isFullyProcessed = PROCESSING_ACTIONS.every(a => completedActions.includes(a.value));
-
-  useEffect(() => {
-    if (batchId) {
-      loadBatch(batchId);
-    }
-  }, [batchId]);
-
-  const loadBatch = async (id: string) => {
-    setIsLoading(true);
-    try {
-      const batchData = await getBatchById(id);
-      if (batchData) {
-        setBatch(batchData);
-        setFormData((prev: StatusUpdateData) => ({
-          ...prev,
-          batchId: batchData.id,
-          newWeight: batchData.currentWeight || batchData.initialWeight
-        }));
-      }
-    } catch (error) {
-      console.error('Failed to load batch:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  if (!assetUnit) {
+    return (
+      <Card className="p-8 text-center">
+        <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span className="text-2xl">⚠️</span>
+        </div>
+        <h3 className="text-xl font-semibold text-gray-700 mb-2">Token Not Found</h3>
+        <p className="text-gray-500">
+          This batch doesn't have a valid asset unit for transfer.
+        </p>
+      </Card>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!batch) return;
-
-    if (completedActions.includes(formData.action)) {
-      alert('This action has already been performed.');
-      return;
-    }
-
     setIsSubmitting(true);
-    try {
-      await updateBatch(formData);
-      // Reload batch to get updated data
-      await loadBatch(batch.id);
+    setError(null);
 
-      // Reset form for next update
-      setFormData({
-        batchId: batch.id,
-        action: 'PROCESSING_STARTED',
-        newWeight: batch.currentWeight || batch.initialWeight,
-        moistureContent: '',
-        cuppingScore: undefined,
-        notes: ''
-      });
-    } catch (error) {
-      console.error('Failed to update batch:', error);
+    try {
+      const result = await transferToken(
+        assetUnit,
+        formData.status,
+        formData.description,
+        formData.note
+      );
+
+      setTxHash(result.txHash);
+
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (err) {
+      console.error('Transfer failed:', err);
+      if (err instanceof MintError) {
+        setError(err.message);
+      } else {
+        setError('Failed to update status: ' + (err as Error).message);
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleChange = (field: keyof StatusUpdateData, value: string | number) => {
-    setFormData((prev: StatusUpdateData) => ({ ...prev, [field]: value }));
-  };
-
-  if (isLoading) {
+  // Success view
+  if (txHash) {
     return (
-      <div className="bg-white rounded-xl shadow-lg p-8 flex items-center justify-center">
-        <LoadingSpinner size="lg" text="Loading batch data..." />
-      </div>
-    );
-  }
-
-  if (!batch) {
-    return (
-      <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-        <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span className="text-2xl">📦</span>
-        </div>
-        <h3 className="text-xl font-semibold text-gray-700 mb-2">No Batch Selected</h3>
-        <p className="text-gray-500">
-          Please scan a batch first or enter a batch ID to update its status
-        </p>
-        <div className="mt-6">
-          <input
-            type="text"
-            placeholder="Enter Batch ID (e.g., ETH-COFFEE-001)"
-            value={formData.batchId}
-            onChange={(e) => onBatchChange(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-6 text-center mb-6">
+            <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <span className="text-emerald-600 text-xl">✓</span>
+            </div>
+            <h3 className="text-lg font-semibold text-emerald-800 mb-2">Status Updated Successfully!</h3>
+            <p className="text-emerald-700 text-sm mb-4">
+              Token metadata has been updated on the Cardano blockchain.
+            </p>
+            <div className="bg-white rounded-lg p-3 text-left space-y-2 mb-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Transaction:</span>
+                <span className="font-mono text-xs truncate max-w-[200px]">{txHash.substring(0, 24)}...</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">New Status:</span>
+                <span className="font-medium capitalize">{formData.status}</span>
+              </div>
+            </div>
+            <a href={getCardanoScanTxUrl(txHash)} target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" size="sm">🔍 View on CardanoScan</Button>
+            </a>
+          </div>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => navigate('/processor/tokens')} className="flex-1">
+              Back to Tokens
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="bg-white rounded-xl shadow-lg p-6">
+    <Card>
+      <CardContent className="p-6">
         {/* Batch Header */}
         <div className="bg-gray-50 rounded-lg p-4 mb-6">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="font-bold text-lg text-gray-800">{batch.id}</h3>
+              <h3 className="font-bold text-lg text-gray-800">
+                #{batch.batchNumber || batch.id.substring(0, 8)}
+              </h3>
               <p className="text-gray-600 capitalize">{batch.cropType} • {batch.variety}</p>
             </div>
             <div className="text-right">
-              <div className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm font-medium">
-                Current Weight: {batch.currentWeight || batch.initialWeight}kg
+              <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-medium capitalize">
+                Current: {batch.status}
               </div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 mt-2">
             <div><span className="font-medium">Farmer:</span> {batch.farmer.name}</div>
-            <div><span className="font-medium">Location:</span> {batch.location}</div>
+            <div><span className="font-medium">Weight:</span> {batch.initialWeight}kg</div>
           </div>
         </div>
 
-        {isFullyProcessed && (
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-            <div className="flex">
-              <div className="ml-3">
-                <p className="text-sm text-yellow-700 font-medium">
-                  Cannot edit since this batch has been fully processed.
-                </p>
-              </div>
-            </div>
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <p className="text-red-800">{error}</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Action Selection */}
+          {/* Status Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Processing Action *
+              New Processing Status *
             </label>
             <div className="grid gap-2">
-              {PROCESSING_ACTIONS.map((action) => {
-                const isCompleted = completedActions.includes(action.value);
-                const isNext = action.value === nextAction?.value;
-                const isDisabled = !isNext; // Disable if it's not the exact next step (covers completed and future steps)
-
-                return (
-                  <button
-                    key={action.value}
-                    type="button"
-                    disabled={isDisabled}
-                    onClick={() => handleChange('action', action.value)}
-                    className={`p-4 border-2 rounded-lg text-left transition ${formData.action === action.value && !isDisabled
-                        ? 'border-blue-500 bg-blue-50'
-                        : isDisabled
-                          ? 'border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <div className="font-medium text-gray-800">{action.label}</div>
-                        <div className="text-sm text-gray-600">{action.description}</div>
-                      </div>
-                      {isCompleted && <span className="text-green-600 font-bold text-xl">✓</span>}
-                    </div>
-                  </button>
-                );
-              })}
+              {PROCESSING_STATUSES.map((status) => (
+                <button
+                  key={status.value}
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, status: status.value }))}
+                  className={`p-4 border-2 rounded-lg text-left transition ${formData.status === status.value
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                >
+                  <div className="font-medium text-gray-800">{status.label}</div>
+                  <div className="text-sm text-gray-600">{status.description}</div>
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Processing Data */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Current Weight (kg)
-              </label>
-              <input
-                type="number"
-                disabled={isFullyProcessed}
-                value={formData.newWeight || ''}
-                onChange={(e) => handleChange('newWeight', parseInt(e.target.value) || 0)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
-                placeholder="Enter current weight"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Moisture Content (%)
-              </label>
-              <input
-                type="text"
-                disabled={isFullyProcessed}
-                value={formData.moistureContent}
-                onChange={(e) => handleChange('moistureContent', e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
-                placeholder="e.g., 11.5%"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Cupping Score
-              </label>
-              <input
-                type="number"
-                disabled={isFullyProcessed}
-                min="0"
-                max="100"
-                step="0.1"
-                value={formData.cuppingScore || ''}
-                onChange={(e) => handleChange('cuppingScore', parseFloat(e.target.value) || 0)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
-                placeholder="e.g., 88.5"
-              />
-            </div>
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description
+            </label>
+            <input
+              type="text"
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., Processed at Station A"
+            />
           </div>
 
-          {/* Notes */}
+          {/* Note */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Processing Notes
             </label>
             <textarea
-              value={formData.notes}
-              disabled={isFullyProcessed}
-              onChange={(e) => handleChange('notes', e.target.value)}
+              value={formData.note}
+              onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
               rows={3}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               placeholder="Add any notes about the processing..."
             />
           </div>
 
           {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isSubmitting || isFullyProcessed}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition disabled:opacity-50 flex items-center justify-center"
-          >
+          <Button type="submit" disabled={isSubmitting} className="w-full h-12 text-lg">
             {isSubmitting ? (
-              <>
+              <span className="flex items-center justify-center gap-2">
                 <LoadingSpinner size="sm" />
-                <span className="ml-2">Updating Batch...</span>
-              </>
+                Updating on Blockchain...
+              </span>
             ) : (
-              'Update Batch Status'
+              'Update Token Status'
             )}
-          </button>
+          </Button>
         </form>
 
-        {/* Transaction Preview */}
+        {/* Metadata Preview */}
         <div className="mt-6 p-4 bg-gray-800 rounded-lg">
-          <h4 className="text-white font-medium mb-2">Blockchain Transaction Preview</h4>
+          <h4 className="text-white font-medium mb-2">Blockchain Metadata Preview</h4>
           <pre className="text-green-400 text-sm overflow-x-auto">
             {JSON.stringify({
-              "1001": {
-                batch_id: batch.id,
-                action: formData.action,
-                timestamp: new Date().toISOString(),
-                actor: {
-                  id: "processor_001",
-                  name: "Processing Station"
-                },
-                data: {
-                  new_weight: formData.newWeight,
-                  moisture_content: formData.moistureContent,
-                  cupping_score: formData.cuppingScore,
-                  notes: formData.notes
-                }
-              }
+              status: formData.status,
+              description: formData.description,
+              note: formData.note
             }, null, 2)}
           </pre>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

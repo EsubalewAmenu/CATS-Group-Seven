@@ -1,0 +1,340 @@
+{
+	"info": {
+		"_postman_id": "f3cc3267-bdcd-4add-8f00-0fe93b530abf",
+		"name": "Coffee Supply Chain API",
+		"description": "# Coffee Supply Chain API\n\n## Overview\n\nThe Coffee Supply Chain API provides a comprehensive solution for tracking and managing coffee throughout its journey from farm to cup. This API enables stakeholders to record, verify, and trace coffee beans through various stages of the supply chain, ensuring transparency and quality control.blockfrostKey\n\nThroughout the process feel free to use my `secretSeed,` `blockfrostKe,` and `cborHexy.`\n\n## Current Implementation\n\n### Minting Functionality\n\nThe API currently supports **minting** operations, which allow you to register and tokenize harvested coffee batches on the blockchain. This creates an immutable record of the coffee's origin and initial harvest data.\n\n**Available Endpoint:**\n\n- `POST /mint` - Register a new coffee batch and create its digital identity\n    \n\n## Upcoming Features\n\nThis is a **work-in-progress API** with additional endpoints currently under development. The following features will be added soon:\n\n### Supply Chain Operations\n\n- **Transfer to Washer** - Record the movement of harvested coffee to washing stations\n    \n- **Transport Management** - Track coffee shipments between locations\n    \n- **Processing Stages** - Document drying, milling, and roasting operations\n    \n- **Quality Control** - Log quality assessments and certifications\n    \n- **Distribution Tracking** - Monitor coffee distribution to retailers and consumers\n    \n\n## Getting Started\n\nTo use this API, you'll need:\n\n1. Valid authentication credentials (API key)\n    \n2. Access to the appropriate blockchain network\n    \n3. Proper permissions for supply chain operations\n    \n\n## Status & Updates\n\nThis API is actively being developed. New endpoints and features will be added incrementally. Check back regularly for updates, or contact the development team for information about upcoming releases.\n\n---\n\n_Note: This documentation will be updated as new features become available._",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "43997075"
+	},
+	"item": [
+		{
+			"name": "Mint api",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"blockfrostKey\": \"preprod2LaUuRkKafgzxoHHMuUTEnQOf5hmd4Z0\",\n  \"secretSeed\": \"cabin family silk spring chalk noble purse riot spend actual indicate age simple broom fame wreck fan relax love shallow bird much invite trumpet\",\n  \"tokenName\": \"Coffee#3350\",\n  \"metadata\": \n    { \n        \"name\": \"Coffee batch 33501\", \n        \"weight\": \"30\", \n        \"unit\": \"kg\",\n        \"variety\": \"Sidama\",\n        \"location\" : \"GPS Coordinates\",\n        \"lat\": \"5.8500° N\",\n        \"long\": \"39.0500° E\",\n        \"region\": \"Guji\"\n    },\n  \"cborHex\": \"58d301010022229800aba2aba1aab9faab9eaab9dab9a9bae0049bad0039bae00248888888896600264646644b30013370e900018049baa0018cc004dd7180618051baa001acc004cdc3a400060126ea800a2b3001300a3754005149a2c805a2c804244b30010018a508acc004c96600266e3cdd7180798069baa00100a899b87375a601e6020601a6ea8004026294100b180718061baa300e0018a518998010011807800a0144034911198008009bac300f300d3754601e00e8b2010300a001300a300b001300a00130063754015149a26cac8021\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://thirsty-bat-79-y99yj1aw8c92.deno.dev/mint",
+					"protocol": "https",
+					"host": [
+						"thirsty-bat-79-y99yj1aw8c92",
+						"deno",
+						"dev"
+					],
+					"path": [
+						"mint"
+					]
+				},
+				"description": "# Mint Coffee Batch\n\n## Overview\n\nThe **Mint** endpoint creates a blockchain-based digital identity for harvested coffee batches in the supply chain. This operation tokenizes coffee batch information, creating an immutable record on the blockchain that serves as the foundation for tracking the coffee throughout its journey from farm to cup.\n\n## Purpose\n\nMinting is the first critical step in the coffee supply chain tracking system. It:\n\n- **Registers** newly harvested coffee batches on the blockchain\n- **Creates** a unique digital token representing the physical coffee batch\n- **Records** immutable origin data including location, variety, and weight\n- **Establishes** a verifiable chain of custody from the point of harvest\n- **Enables** transparent tracking through subsequent supply chain stages\n\n## Request Body Parameters\n\n### Required Fields\n\n| Parameter | Type | Description |\n|-----------|------|-------------|\n| `blockfrostKey` | string | API key for Blockfrost service to interact with the Cardano blockchain |\n| `secretSeed` | string | Mnemonic seed phrase for wallet authentication and transaction signing |\n| `tokenName` | string | Unique identifier for the coffee token (e.g., \"Coffee#3350\") |\n| `metadata` | object | Comprehensive information about the coffee batch |\n| `cborHex` | string | CBOR-encoded hexadecimal smart contract validator script |\n\n### Metadata Object Structure\n\nThe `metadata` object contains detailed information about the coffee batch:\n\n| Field | Type | Description | Example |\n|-------|------|-------------|---------|\n| `name` | string | Human-readable batch identifier | \"Coffee batch 33501\" |\n| `weight` | string | Quantity of coffee in the batch | \"30\" |\n| `unit` | string | Unit of measurement | \"kg\" |\n| `variety` | string | Coffee variety or cultivar | \"Sidama\" |\n| `location` | string | Location description | \"GPS Coordinates\" |\n| `lat` | string | Latitude coordinate | \"5.8500° N\" |\n| `long` | string | Longitude coordinate | \"39.0500° E\" |\n| `region` | string | Geographic region of origin | \"Guji\" |\n\n## Response\n\n### Success Response (200 OK)\n\n```json\n{\n    \"status\": \"success\",\n    \"txHash\": \"f9f33375a4f85d57a4d6a12988b74571f9072060af17df3241c908350137ec94\",\n    \"unit\": \"dc350cb196a54084318fa489128938025e3b1ad81295227056c30c50436f666665652333333530\",\n    \"policyId\": \"dc350cb196a54084318fa489128938025e3b1ad81295227056c30c50\"\n}\n```\n\n| Field | Description |\n|-------|-------------|\n| `status` | Operation result status |\n| `txHash` | Blockchain transaction hash for verification |\n| `unit` | Unique asset identifier (policyId + tokenName in hex) |\n| `policyId` | Minting policy identifier on the blockchain |\n\n## Usage Examples\n\n### Example 1: Minting Ethiopian Sidama Coffee\n\nRegister a 30kg batch of Sidama variety coffee from the Guji region:\n\n```json\n{\n  \"blockfrostKey\": \"preprod2LaUuRkKafgzxoHHMuUTEnQOf5hmd4Z0\",\n  \"secretSeed\": \"your-wallet-seed-phrase-here\",\n  \"tokenName\": \"Coffee#3350\",\n  \"metadata\": {\n    \"name\": \"Coffee batch 33501\",\n    \"weight\": \"30\",\n    \"unit\": \"kg\",\n    \"variety\": \"Sidama\",\n    \"location\": \"GPS Coordinates\",\n    \"lat\": \"5.8500° N\",\n    \"long\": \"39.0500° E\",\n    \"region\": \"Guji\"\n  },\n  \"cborHex\": \"58d301010022229800aba2aba1aab9faab9eaab9dab9a9bae0049bad0039bae00248888888896600264646644b30013370e900018049baa0018cc004dd7180618051baa001acc004cdc3a400060126ea800a2b3001300a3754005149a2c805a2c804244b30010018a508acc004c96600266e3cdd7180798069baa00100a899b87375a601e6020601a6ea8004026294100b180718061baa300e0018a518998010011807800a0144034911198008009bac300f300d3754601e00e8b2010300a001300a300b001300a00130063754015149a26cac8021\"\n}\n```\n\n### Example 2: Typical Workflow\n\n1. **Harvest**: Coffee is harvested at the farm\n2. **Collect Data**: Gather batch information (weight, variety, location)\n3. **Mint Token**: Call this endpoint to create the blockchain record\n4. **Receive Confirmation**: Store the `txHash` and `unit` for future reference\n5. **Track**: Use the token ID for subsequent supply chain operations\n\n## Use Cases\n\n- **Coffee Cooperatives**: Register harvested batches from member farms\n- **Quality Assurance**: Create verifiable records of origin for premium coffee\n- **Supply Chain Transparency**: Enable consumers to trace coffee back to its source\n- **Certification**: Support organic, fair trade, or specialty coffee certifications\n- **Inventory Management**: Track coffee batches through processing and distribution\n\n## Important Notes\n\n- **Blockchain Network**: This endpoint interacts with the Cardano blockchain via Blockfrost\n- **Immutability**: Once minted, the token and its metadata cannot be altered\n- **Security**: Keep your `secretSeed` secure; it controls wallet access\n- **Token Naming**: Use a consistent naming convention for easy identification\n- **Transaction Fees**: Blockchain transactions incur network fees (paid from the wallet)\n- **Confirmation Time**: Blockchain confirmation may take a few minutes\n\n## Next Steps\n\nAfter minting, the coffee batch token can be:\n- Transferred to washing stations\n- Updated with processing information\n- Tracked through transportation\n- Verified by buyers and consumers"
+			},
+			"response": [
+				{
+					"name": "Success",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"blockfrostKey\": \"preprod2LaUuRkKafgzxoHHMuUTEnQOf5hmd4Z0\",\n  \"secretSeed\": \"cabin family silk spring chalk noble purse riot spend actual indicate age simple broom fame wreck fan relax love shallow bird much invite trumpet\",\n  \"tokenName\": \"MyAikenNFT\",\n  \"metadata\": { \"name\": \"Aiken NFT #1\", \"image\": \"ipfs://...\" },\n  \"cborHex\": \"58d301010022229800aba2aba1aab9faab9eaab9dab9a9bae0049bad0039bae00248888888896600264646644b30013370e900018049baa0018cc004dd7180618051baa001acc004cdc3a400060126ea800a2b3001300a3754005149a2c805a2c804244b30010018a508acc004c96600266e3cdd7180798069baa00100a899b87375a601e6020601a6ea8004026294100b180718061baa300e0018a518998010011807800a0144034911198008009bac300f300d3754601e00e8b2010300a001300a300b001300a00130063754015149a26cac8021\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://thirsty-bat-79-y99yj1aw8c92.deno.dev/mint",
+							"protocol": "https",
+							"host": [
+								"thirsty-bat-79-y99yj1aw8c92",
+								"deno",
+								"dev"
+							],
+							"path": [
+								"mint"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "Text",
+					"header": [
+						{
+							"key": "content-type",
+							"value": "application/json; charset=UTF-8"
+						},
+						{
+							"key": "vary",
+							"value": "Accept-Encoding"
+						},
+						{
+							"key": "content-encoding",
+							"value": "gzip"
+						},
+						{
+							"key": "content-length",
+							"value": "213"
+						},
+						{
+							"key": "date",
+							"value": "Sat, 06 Dec 2025 06:00:18 GMT"
+						},
+						{
+							"key": "x-robots-tag",
+							"value": "noindex"
+						},
+						{
+							"key": "via",
+							"value": "http/1.1 edgeproxy-h"
+						},
+						{
+							"key": "server",
+							"value": "deno/gcp-us-east4"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"status\": \"success\",\n    \"txHash\": \"a5827ade12b68246b7d717868ba5e2e3246b0dcaa9db2634c6049ad9da55a2a9\",\n    \"unit\": \"7b400c02b011bbe68f3c505e803aa8a06e3729dffabfdeb3ed33c0934d7941696b656e4e4654\",\n    \"policyId\": \"7b400c02b011bbe68f3c505e803aa8a06e3729dffabfdeb3ed33c093\"\n}"
+				},
+				{
+					"name": "Sample coffe",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"blockfrostKey\": \"preprod2LaUuRkKafgzxoHHMuUTEnQOf5hmd4Z0\",\n  \"secretSeed\": \"cabin family silk spring chalk noble purse riot spend actual indicate age simple broom fame wreck fan relax love shallow bird much invite trumpet\",\n  \"tokenName\": \"Coffee#3350\",\n  \"metadata\": \n    { \n        \"name\": \"Coffee batch 33501\", \n        \"weight\": \"30\", \n        \"unit\": \"kg\",\n        \"variety\": \"Sidama\",\n        \"location\" : \"GPS Coordinates\",\n        \"lat\": \"5.8500° N\",\n        \"long\": \"39.0500° E\",\n        \"region\": \"Guji\"\n    },\n  \"cborHex\": \"58d301010022229800aba2aba1aab9faab9eaab9dab9a9bae0049bad0039bae00248888888896600264646644b30013370e900018049baa0018cc004dd7180618051baa001acc004cdc3a400060126ea800a2b3001300a3754005149a2c805a2c804244b30010018a508acc004c96600266e3cdd7180798069baa00100a899b87375a601e6020601a6ea8004026294100b180718061baa300e0018a518998010011807800a0144034911198008009bac300f300d3754601e00e8b2010300a001300a300b001300a00130063754015149a26cac8021\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://thirsty-bat-79.deno.dev/mint",
+							"protocol": "https",
+							"host": [
+								"thirsty-bat-79",
+								"deno",
+								"dev"
+							],
+							"path": [
+								"mint"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "Text",
+					"header": [
+						{
+							"key": "content-type",
+							"value": "application/json; charset=UTF-8"
+						},
+						{
+							"key": "vary",
+							"value": "Accept-Encoding"
+						},
+						{
+							"key": "content-encoding",
+							"value": "gzip"
+						},
+						{
+							"key": "content-length",
+							"value": "211"
+						},
+						{
+							"key": "date",
+							"value": "Sat, 06 Dec 2025 06:05:50 GMT"
+						},
+						{
+							"key": "x-robots-tag",
+							"value": "noindex"
+						},
+						{
+							"key": "via",
+							"value": "http/1.1 edgeproxy-h"
+						},
+						{
+							"key": "server",
+							"value": "deno/gcp-us-east4"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"status\": \"success\",\n    \"txHash\": \"f9f33375a4f85d57a4d6a12988b74571f9072060af17df3241c908350137ec94\",\n    \"unit\": \"dc350cb196a54084318fa489128938025e3b1ad81295227056c30c50436f666665652333333530\",\n    \"policyId\": \"dc350cb196a54084318fa489128938025e3b1ad81295227056c30c50\"\n}"
+				}
+			]
+		},
+		{
+			"name": "Asset Transfer",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"blockfrostKey\": \"preprod2LaUuRkKafgzxoHHMuUTEnQOf5hmd4Z0\",\n  \"secretSeed\": \"cabin family silk spring chalk noble purse riot spend actual indicate age simple broom fame wreck fan relax love shallow bird much invite trumpet\",\n  \"metadata\": \n    { \n        \"status\": \"washed\", \n        \"description\": \"test\", \n        \"note\": \"test2\"\n    },\n    \"assetUnit\": \"ff1f7b705285479fde3de1bd77571ba9141c1302b375937b00b7a17a4d7941696b656e4e4654\",\n    \"recipientAddress\": \"addr_test1qzxpp07tfye3mmun65wr3e8npj5etp2lrg802rrjgffttx3u33d6t2t2hxvu0h50q3jwfq6ykqw7ex8mkslpn5rqdu6qugnqpk\"\n    \n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://thirsty-bat-79-1tr7rfw8w4y2.deno.dev/transfer",
+					"protocol": "https",
+					"host": [
+						"thirsty-bat-79-1tr7rfw8w4y2",
+						"deno",
+						"dev"
+					],
+					"path": [
+						"transfer"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "Success",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"blockfrostKey\": \"preprod2LaUuRkKafgzxoHHMuUTEnQOf5hmd4Z0\",\n  \"secretSeed\": \"cabin family silk spring chalk noble purse riot spend actual indicate age simple broom fame wreck fan relax love shallow bird much invite trumpet\",\n  \"metadata\": \n    { \n        \"status\": \"washed\", \n        \"description\": \"test\", \n        \"note\": \"test2\"\n    },\n    \"assetUnit\": \"ff1f7b705285479fde3de1bd77571ba9141c1302b375937b00b7a17a4d7941696b656e4e4654\",\n    \"recipientAddress\": \"addr_test1qzxpp07tfye3mmun65wr3e8npj5etp2lrg802rrjgffttx3u33d6t2t2hxvu0h50q3jwfq6ykqw7ex8mkslpn5rqdu6qugnqpk\"\n    \n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://thirsty-bat-79-1tr7rfw8w4y2.deno.dev/transfer",
+							"protocol": "https",
+							"host": [
+								"thirsty-bat-79-1tr7rfw8w4y2",
+								"deno",
+								"dev"
+							],
+							"path": [
+								"transfer"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "Text",
+					"header": [
+						{
+							"key": "content-type",
+							"value": "application/json; charset=UTF-8"
+						},
+						{
+							"key": "vary",
+							"value": "Accept-Encoding"
+						},
+						{
+							"key": "content-encoding",
+							"value": "gzip"
+						},
+						{
+							"key": "content-length",
+							"value": "160"
+						},
+						{
+							"key": "date",
+							"value": "Thu, 11 Dec 2025 14:05:19 GMT"
+						},
+						{
+							"key": "x-robots-tag",
+							"value": "noindex"
+						},
+						{
+							"key": "via",
+							"value": "http/1.1 edgeproxy-h"
+						},
+						{
+							"key": "server",
+							"value": "deno/gcp-us-east4"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"status\": \"success\",\n    \"txHash\": \"1a9a1fd62ae9c09e7e3cbf9ef8153814ead251038fb9031f7b5f2ae6bffed44d\",\n    \"message\": \"Asset transferred with metadata\"\n}"
+				},
+				{
+					"name": "Wrong assetUnit",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"blockfrostKey\": \"preprod2LaUuRkKafgzxoHHMuUTEnQOf5hmd4Z0\",\n  \"secretSeed\": \"cabin family silk spring chalk noble purse riot spend actual indicate age simple broom fame wreck fan relax love shallow bird much invite trumpet\",\n  \"metadata\": \n    { \n        \"status\": \"washed\", \n        \"description\": \"test\", \n        \"note\": \"test2\"\n    },\n    \"assetUnit\": \"ff1f7b705285479fde3de1bd77571ba9141c1302b375937b00b7a17a4d7941696b656e4e4654\",\n    \"recipientAddress\": \"addr_test1qzxpp07tfye3mmun65wr3e8npj5etp2lrg802rrjgffttx3u33d6t2t2hxvu0h50q3jwfq6ykqw7ex8mkslpn5rqdu6qugnqpk\"\n    \n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://thirsty-bat-79-1tr7rfw8w4y2.deno.dev/transfer",
+							"protocol": "https",
+							"host": [
+								"thirsty-bat-79-1tr7rfw8w4y2",
+								"deno",
+								"dev"
+							],
+							"path": [
+								"transfer"
+							]
+						}
+					},
+					"status": "Internal Server Error",
+					"code": 500,
+					"_postman_previewlanguage": "Text",
+					"header": [
+						{
+							"key": "content-type",
+							"value": "application/json; charset=UTF-8"
+						},
+						{
+							"key": "vary",
+							"value": "Accept-Encoding"
+						},
+						{
+							"key": "content-encoding",
+							"value": "gzip"
+						},
+						{
+							"key": "content-length",
+							"value": "2307"
+						},
+						{
+							"key": "date",
+							"value": "Thu, 11 Dec 2025 14:05:53 GMT"
+						},
+						{
+							"key": "x-robots-tag",
+							"value": "noindex"
+						},
+						{
+							"key": "via",
+							"value": "http/1.1 edgeproxy-h"
+						},
+						{
+							"key": "server",
+							"value": "deno/gcp-us-east4"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"error\": \"Error: {\\\"contents\\\":{\\\"contents\\\":{\\\"contents\\\":{\\\"era\\\":\\\"ShelleyBasedEraConway\\\",\\\"error\\\":[\\\"ConwayUtxowFailure (UtxoFailure (BadInputsUTxO (fromList [TxIn (TxId {unTxId = SafeHash \\\\\\\"91c7edcf4543ca947792102027c2aaee663c03b7bc35cbce1ab156249fbe1f41\\\\\\\"}) (TxIx {unTxIx = 0}),TxIn (TxId {unTxId = SafeHash \\\\\\\"91c7edcf4543ca947792102027c2aaee663c03b7bc35cbce1ab156249fbe1f41\\\\\\\"}) (TxIx {unTxIx = 1})])))\\\",\\\"ConwayUtxowFailure (UtxoFailure (ValueNotConservedUTxO (Mismatch {mismatchSupplied = MaryValue (Coin 0) (MultiAsset (fromList [])), mismatchExpected = MaryValue (Coin 190493389) (MultiAsset (fromList [(PolicyID {policyID = ScriptHash \\\\\\\"058206937780c55e18c07e1ad794c034ddbedc4442ed61f7138c6fd8\\\\\\\"},fromList [(\\\\\\\"436f666665652331373635333639313536373632\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"15fc2c2aa4f16e23d4c97ffcda61ff686d0047e956f6ec923c961ae7\\\\\\\"},fromList [(\\\\\\\"436f666665652331373635303130363339343537\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"1a8410c92dcfd87ebc61fb4b3ec8dfa161019bf670238e1d44877ca7\\\\\\\"},fromList [(\\\\\\\"4d7941696b656e4e4654\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"1d6e948566a42bcbc39c0a3a5d66fb6c586eac86f5ce3540b302e6ec\\\\\\\"},fromList [(\\\\\\\"4d7941696b656e4e4654\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"24b926f6a76a2ffb7de1cf3c1533de6a1aca3e58f845e3bdc99b99b6\\\\\\\"},fromList [(\\\\\\\"4d7941696b656e4e4654\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"2cf00f15f928ea059f2d3aae7326adb9a2e333b5de34504df1479baf\\\\\\\"},fromList [(\\\\\\\"4d7941696b656e4e4654\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"2fe8df2d6eb6f5ae558ad54bf3dbc556cbc256f72b26580647bb2e9c\\\\\\\"},fromList [(\\\\\\\"4d7941696b656e4e4654\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"396c06cf522c8c6eaef2e41224fe5860ef11134e236b462b5aba5232\\\\\\\"},fromList [(\\\\\\\"4d7941696b656e4e4654\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"4d2c57c2b2882efcce275c9e54c640720652390a0062f5114be2c772\\\\\\\"},fromList [(\\\\\\\"4d7941696b656e4e4654\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"4e4e20cd43041d651c98a7d60e73cfb099748a8e40bea838c6fc0012\\\\\\\"},fromList [(\\\\\\\"436f666665652331373635333133323837303431\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"50dc0a181c784f535e8342c19efe4829f8fd4a13558a186f92f2df87\\\\\\\"},fromList [(\\\\\\\"436f666665652331373635333732313330333134\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"6140f69182acf7a88f63928e012744335ff07577601c47cb809da356\\\\\\\"},fromList [(\\\\\\\"4d7941696b656e4e4654\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"75613d191d6790c70a092453539581047b1c90ef46531c0da7364ca3\\\\\\\"},fromList [(\\\\\\\"4d7941696b656e4e4654\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"7b400c02b011bbe68f3c505e803aa8a06e3729dffabfdeb3ed33c093\\\\\\\"},fromList [(\\\\\\\"4d7941696b656e4e4654\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"8de3d48bf4e8fde1ef7a4099380342b6b254edc57b5dc878025dacf6\\\\\\\"},fromList [(\\\\\\\"436f666665652331373635333637303032393333\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"8fbefcc25e8af595822994a967c33036b53f654d990c77615c8c0eb2\\\\\\\"},fromList [(\\\\\\\"4d7941696b656e4e4654\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"aa6c0259747479f8edd2bff227315a41be991c95d64530360ad51f82\\\\\\\"},fromList [(\\\\\\\"436f666665652331373635333637363636363738\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"af6c618c453d8d9bec9439de98107e6c660c18227fca5b3a880394df\\\\\\\"},fromList [(\\\\\\\"436f666665652331373635323037363138333337\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"b4cf6f3295d939ac4be31f4184f4e4d40a8a78b3cd46acee023f1756\\\\\\\"},fromList [(\\\\\\\"436f666665652331373635333630353938313031\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"b84008b102d7d812c8c5f9c34030f169db7a26d3cddc5a14d1f2877e\\\\\\\"},fromList [(\\\\\\\"4d7941696b656e4e4654\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"cd56a5d64acfc86c76be448492fdcf466eb9fff3df75e54ceeab14e3\\\\\\\"},fromList [(\\\\\\\"4d7941696b656e4e4654\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"cececbff31a2d1d9f74d4eb37e165c31806190498fc0de4e16ede8c0\\\\\\\"},fromList [(\\\\\\\"436f666665652331373635333637373330303338\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"d76c33c13e70539ae6c553be18e188691cbf3f00428989bb65a030ae\\\\\\\"},fromList [(\\\\\\\"4d7941696b656e4e4654\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"dc350cb196a54084318fa489128938025e3b1ad81295227056c30c50\\\\\\\"},fromList [(\\\\\\\"436f666665652333333530\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"dd29116a3decb3593c03f97685d65faaedce3c5784b175fc8a6d396b\\\\\\\"},fromList [(\\\\\\\"4d7941696b656e4e4654\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"e1db75226594c5a58779e169f5636d8a2751c6ea9ff29875507d0c04\\\\\\\"},fromList [(\\\\\\\"4d7941696b656e4e4654\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"f80bbf2d3fe40c9db584828e16fc7daf5516c8c5050d0caafd51d252\\\\\\\"},fromList [(\\\\\\\"4d7941696b656e4e4654\\\\\\\",1)]),(PolicyID {policyID = ScriptHash \\\\\\\"ff1f7b705285479fde3de1bd77571ba9141c1302b375937b00b7a17a\\\\\\\"},fromList [(\\\\\\\"4d7941696b656e4e4654\\\\\\\",1)])]))})))\\\"],\\\"kind\\\":\\\"ShelleyTxValidationError\\\"},\\\"tag\\\":\\\"TxValidationErrorInCardanoMode\\\"},\\\"tag\\\":\\\"TxCmdTxSubmitValidationError\\\"},\\\"tag\\\":\\\"TxSubmitFail\\\"}\"\n}"
+				}
+			]
+		}
+	]
+}

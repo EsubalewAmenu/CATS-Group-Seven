@@ -92,3 +92,61 @@ export async function mintBatchToken(batch: Batch): Promise<MintResponse> {
         throw new MintError(`Failed to mint: ${(error as Error).message}`);
     }
 }
+
+// Transfer API Response
+export interface TransferResponse {
+    status: string;
+    txHash: string;
+    message: string;
+}
+
+/**
+ * Transfer a token to the processor wallet with updated metadata
+ */
+export async function transferToken(
+    assetUnit: string,
+    status: string,
+    description?: string,
+    note?: string
+): Promise<TransferResponse> {
+    try {
+        const response = await fetch('/.netlify/functions/transfer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                assetUnit,
+                status,
+                description: description || '',
+                note: note || ''
+            }),
+        });
+
+        // Check if response has content
+        const text = await response.text();
+        if (!text) {
+            throw new MintError('Empty response from server. Please ensure the function is deployed.');
+        }
+
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch {
+            throw new MintError(`Invalid response from server: ${text.substring(0, 100)}`);
+        }
+
+        if (!response.ok) {
+            throw new MintError(data.error || `Transfer failed with status ${response.status}`);
+        }
+
+        return {
+            status: data.status,
+            txHash: data.txHash,
+            message: data.message
+        };
+    } catch (error) {
+        if (error instanceof MintError) {
+            throw error;
+        }
+        throw new MintError(`Failed to transfer: ${(error as Error).message}`);
+    }
+}

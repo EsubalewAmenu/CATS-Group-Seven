@@ -32,8 +32,8 @@ export default function DashboardLayout({ children, role, title, subtitle }: Das
         ];
       case 'processor':
         return [
-          { id: 'scan', path: '/processor/scan', label: 'Scan', icon: '📷' },
-          { id: 'update', path: '/processor/update', label: 'Update', icon: '🔄' }
+          { id: 'tokens', path: '/processor/tokens', label: 'Tokens', icon: '🪙' },
+          { id: 'update', path: '/processor/update', label: 'Process', icon: '🔄' }
         ];
       default:
         return [];
