@@ -12,25 +12,23 @@ export async function handler(event, context) {
     }
 
     // Get all credentials from environment variables (same as mint)
-    const TRANSFER_API_URL = process.env.TRANSFER_API_URL || 'https://thirsty-bat-79-y99yj1aw8c92.deno.dev/transfer';
+    const TRANSFER_API_URL = process.env.TRANSFER_API_URL;
     const BLOCKFROST_KEY = process.env.BLOCKFROST_KEY;
     const SECRET_SEED = process.env.SECRET_SEED;
     const PROCESSOR_WALLET_ADDRESS = process.env.PROCESSOR_WALLET_ADDRESS;
 
-    if (!BLOCKFROST_KEY || !SECRET_SEED) {
-        console.error('Missing credentials:', { hasBlockfrost: !!BLOCKFROST_KEY, hasSeed: !!SECRET_SEED });
+    // Validate all required environment variables
+    if (!TRANSFER_API_URL || !BLOCKFROST_KEY || !SECRET_SEED || !PROCESSOR_WALLET_ADDRESS) {
+        const missing = [];
+        if (!TRANSFER_API_URL) missing.push('TRANSFER_API_URL');
+        if (!BLOCKFROST_KEY) missing.push('BLOCKFROST_KEY');
+        if (!SECRET_SEED) missing.push('SECRET_SEED');
+        if (!PROCESSOR_WALLET_ADDRESS) missing.push('PROCESSOR_WALLET_ADDRESS');
+        console.error('Missing environment variables:', missing);
         return {
             statusCode: 500,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ error: 'Transfer credentials not configured. Set BLOCKFROST_KEY and SECRET_SEED.' }),
-        };
-    }
-
-    if (!PROCESSOR_WALLET_ADDRESS) {
-        return {
-            statusCode: 500,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ error: 'PROCESSOR_WALLET_ADDRESS environment variable not configured.' }),
+            body: JSON.stringify({ error: `Missing environment variables: ${missing.join(', ')}` }),
         };
     }
 

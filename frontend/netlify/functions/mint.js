@@ -11,17 +11,23 @@ export async function handler(event, context) {
     }
 
     // Get secrets from environment (NOT prefixed with VITE_)
-    const MINT_API_URL = process.env.MINT_API_URL || 'https://thirsty-bat-79-y99yj1aw8c92.deno.dev/mint';
+    const MINT_API_URL = process.env.MINT_API_URL;
     const BLOCKFROST_KEY = process.env.BLOCKFROST_KEY;
     const SECRET_SEED = process.env.SECRET_SEED;
     const CBOR_HEX = process.env.CBOR_HEX;
 
-    // Validate secrets are configured
-    if (!BLOCKFROST_KEY || !SECRET_SEED || !CBOR_HEX) {
+    // Validate all required environment variables are configured
+    if (!MINT_API_URL || !BLOCKFROST_KEY || !SECRET_SEED || !CBOR_HEX) {
+        const missing = [];
+        if (!MINT_API_URL) missing.push('MINT_API_URL');
+        if (!BLOCKFROST_KEY) missing.push('BLOCKFROST_KEY');
+        if (!SECRET_SEED) missing.push('SECRET_SEED');
+        if (!CBOR_HEX) missing.push('CBOR_HEX');
         return {
             statusCode: 500,
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                error: 'Minting credentials not configured on server'
+                error: `Missing environment variables: ${missing.join(', ')}`
             }),
         };
     }
