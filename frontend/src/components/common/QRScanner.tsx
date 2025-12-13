@@ -34,24 +34,47 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
                 scannerRef.current = new Html5Qrcode(containerId);
             }
 
-            await scannerRef.current.start(
-                { facingMode: 'environment' },
-                {
-                    fps: 5,
-                    qrbox: { width: 250, height: 250 },
-                    aspectRatio: 1.0,
-                    videoConstraints: {
-                        width: { min: 640, ideal: 720, max: 1280 },
-                        height: { min: 480, ideal: 720, max: 720 },
+            // detailed constraints to prefer back camera and manage resolution
+            const constraints = {
+                facingMode: { exact: "environment" },
+                width: { min: 640, ideal: 1280, max: 1920 },
+                height: { min: 480, ideal: 720, max: 1080 }
+            };
+
+            // Fallback strategy: try exact environment first, then loose environment
+            try {
+                await scannerRef.current.start(
+                    constraints,
+                    {
+                        fps: 10, // Increased back to 10 for better detection
+                        qrbox: { width: 250, height: 250 },
+                        aspectRatio: 1.0
+                    },
+                    (decodedText) => {
+                        handleScanSuccess(decodedText);
+                    },
+                    (errorMessage) => {
+                        // ignore
                     }
-                },
-                (decodedText) => {
-                    handleScanSuccess(decodedText);
-                },
-                (errorMessage) => {
-                    // Ignore continuous scan errors
-                }
-            );
+                );
+            } catch (e) {
+                console.warn("Exact environment camera failed, trying loose mode", e);
+                // Fallback to basic environment preference without resolution constraints (safer)
+                await scannerRef.current.start(
+                    { facingMode: "environment" },
+                    {
+                        fps: 10,
+                        qrbox: { width: 250, height: 250 },
+                        aspectRatio: 1.0
+                    },
+                    (decodedText) => {
+                        handleScanSuccess(decodedText);
+                    },
+                    (errorMessage) => {
+                        // ignore
+                    }
+                );
+            }
 
             setIsScanning(true);
         } catch (err: any) {
