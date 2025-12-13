@@ -1,5 +1,5 @@
-// Netlify Function to handle Cardano token transfers securely
-// Version: 2.0 - Supports first transfer (minting wallet) and subsequent self-transfers (processor wallet)
+// Netlify Function to handle Cardano token status updates securely
+// Version: 3.0 - Centralized Custody: Token stays in minting wallet, metadata updates via self-transfer
 
 export async function handler(event, context) {
     if (event.httpMethod !== 'POST') {
@@ -10,15 +10,14 @@ export async function handler(event, context) {
         };
     }
 
-    // Get all credentials from environment variables
+    // Get credentials from environment variables
+    // CENTRALIZED CUSTODY: We only use the minting wallet (SECRET_SEED)
     const TRANSFER_API_URL = process.env.TRANSFER_API_URL;
     const BLOCKFROST_KEY = process.env.BLOCKFROST_KEY;
-    const SECRET_SEED = process.env.SECRET_SEED; // Minting wallet (for first transfer)
-    const PROCESSOR_SECRET_SEED = process.env.PROCESSOR_SECRET_SEED; // Processor wallet (for subsequent updates)
-    const PROCESSOR_WALLET_ADDRESS = process.env.PROCESSOR_WALLET_ADDRESS;
+    const SECRET_SEED = process.env.SECRET_SEED; // Single wallet for all operations
 
-    // Validate all required environment variables
-    const requiredVars = { TRANSFER_API_URL, BLOCKFROST_KEY, SECRET_SEED, PROCESSOR_SECRET_SEED, PROCESSOR_WALLET_ADDRESS };
+    // Validate required environment variables
+    const requiredVars = { TRANSFER_API_URL, BLOCKFROST_KEY, SECRET_SEED };
     const missing = Object.entries(requiredVars).filter(([_, v]) => !v).map(([k]) => k);
 
     if (missing.length > 0) {
@@ -31,7 +30,7 @@ export async function handler(event, context) {
     }
 
     try {
-        const { assetUnit, status, description, note, isFirstTransfer } = JSON.parse(event.body);
+        const { assetUnit, status, description, note } = JSON.parse(event.body);
 
         if (!assetUnit || !status) {
             return {
@@ -41,29 +40,22 @@ export async function handler(event, context) {
             };
         }
 
-        // Determine which seed to use:
-        // - First transfer: use minting wallet (SECRET_SEED) to send to processor
-        // - Subsequent transfers: use processor wallet (PROCESSOR_SECRET_SEED) to self-transfer
-        const seedToUse = isFirstTransfer ? SECRET_SEED : PROCESSOR_SECRET_SEED;
-        const transferType = isFirstTransfer ? 'first transfer (minting → processor)' : 'self-transfer (processor → processor)';
+        console.log('Status update request (Centralized Custody):', { assetUnit, status });
 
-        console.log('Transfer request:', {
-            assetUnit,
-            status,
-            transferType,
-            recipientAddress: PROCESSOR_WALLET_ADDRESS
-        });
-
+        // CENTRALIZED CUSTODY: 
+        // - Use SECRET_SEED for all operations
+        // - recipientAddress is null/undefined - Deno API will do self-transfer
         const requestBody = {
             blockfrostKey: BLOCKFROST_KEY,
-            secretSeed: seedToUse,
+            secretSeed: SECRET_SEED,
             metadata: {
                 status,
                 description: description || '',
-                note: note || ''
+                note: note || '',
+                timestamp: new Date().toISOString()
             },
             assetUnit,
-            recipientAddress: PROCESSOR_WALLET_ADDRESS
+            selfTransfer: true // Signal to Deno API to send to self
         };
 
         const response = await fetch(TRANSFER_API_URL, {
@@ -107,7 +99,7 @@ export async function handler(event, context) {
             body: JSON.stringify({
                 status: data.status,
                 txHash: data.txHash,
-                message: data.message || 'Transfer successful'
+                message: data.message || 'Status update successful'
             }),
         };
     } catch (error) {

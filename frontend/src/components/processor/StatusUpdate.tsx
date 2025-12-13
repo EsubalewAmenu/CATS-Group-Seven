@@ -71,15 +71,12 @@ export default function StatusUpdate({ batch, onSuccess }: StatusUpdateProps) {
     setError(null);
 
     try {
-      // First transfer if batch is still in 'harvested' status (hasn't been processed yet)
-      const isFirstTransfer = batch.status === 'harvested';
-
+      // Centralized Custody: Token stays in minting wallet, just update metadata
       const result = await transferToken(
         assetUnit,
         formData.status,
         formData.description,
-        formData.note,
-        isFirstTransfer
+        formData.note
       );
 
       setTxHash(result.txHash);

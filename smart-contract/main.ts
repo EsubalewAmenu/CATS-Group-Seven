@@ -5,7 +5,7 @@ import {
   Data,
   fromText,
   applyParamsToScript,
-  mintingPolicyToId, 
+  mintingPolicyToId,
   type Address,
   type MintingPolicy,
   type PolicyId,
@@ -19,7 +19,7 @@ router.post("/mint", async (context) => {
     const body = await context.request.body({ type: "json" }).value;
 
     if (!body.blockfrostKey || !body.secretSeed) {
-        throw new Error("Missing Blockfrost Key or Secret Seed");
+      throw new Error("Missing Blockfrost Key or Secret Seed");
     }
 
     const lucid = await Lucid(
@@ -30,7 +30,7 @@ router.post("/mint", async (context) => {
     lucid.selectWallet.fromSeed(body.secretSeed);
 
     const tokenName = body.tokenName;
-    const tn = fromText(tokenName); 
+    const tn = fromText(tokenName);
 
     const addr: Address = await lucid.wallet().address();
     console.log("Wallet Address:", addr);
@@ -40,8 +40,8 @@ router.post("/mint", async (context) => {
     let utxo = utxos.find(u => u.assets["lovelace"] > 5000000n && Object.keys(u.assets).length === 1);
 
     if (!utxo) {
-        console.warn("⚠️ No pure ADA UTxO found. Using the first available (might be heavy).");
-        utxo = utxos[0];
+      console.warn("⚠️ No pure ADA UTxO found. Using the first available (might be heavy).");
+      utxo = utxos[0];
     }
 
     if (!utxo) throw new Error("No UTXOs available in wallet!");
@@ -55,14 +55,14 @@ router.post("/mint", async (context) => {
     type Params = Data.Static<typeof Params>;
 
     const nftPolicy: MintingPolicy = {
-      type: "PlutusV3", 
+      type: "PlutusV3",
       script: applyParamsToScript(
-        body.cborHex, 
+        body.cborHex,
         [
-            utxo.txHash,              
-            BigInt(utxo.outputIndex), 
-            tn                        
-        ], 
+          utxo.txHash,
+          BigInt(utxo.outputIndex),
+          tn
+        ],
         Params
       ),
     };
@@ -76,12 +76,12 @@ router.post("/mint", async (context) => {
         [tokenName]: body.metadata
       },
     };
-    
-    console.log("Building transaction...");    
+
+    console.log("Building transaction...");
     let txBuilder = lucid.newTx()
-      .mintAssets({ [unit]: 1n }, Data.void()) 
-      .attach.MintingPolicy(nftPolicy) 
-      .attachMetadata(721, metadata)   
+      .mintAssets({ [unit]: 1n }, Data.void())
+      .attach.MintingPolicy(nftPolicy)
+      .attachMetadata(721, metadata)
       .collectFrom([utxo])
       .addSigner(addr);
 
@@ -90,7 +90,7 @@ router.post("/mint", async (context) => {
 
     const signedTx = await tx.sign.withWallet().complete();
     console.log("Transaction signed.");
-    
+
     const txHash = await signedTx.submit();
     console.log("Transaction submitted:", txHash);
 
@@ -110,8 +110,14 @@ router.post("/transfer", async (context) => {
   try {
     const body = await context.request.body({ type: "json" }).value;
 
-    if (!body.blockfrostKey || !body.secretSeed || !body.recipientAddress || !body.assetUnit) {
-        throw new Error("Missing required fields");
+    // For selfTransfer mode, recipientAddress is optional (we derive it from seed)
+    if (!body.blockfrostKey || !body.secretSeed || !body.assetUnit) {
+      throw new Error("Missing required fields: blockfrostKey, secretSeed, assetUnit");
+    }
+
+    // If not selfTransfer mode, recipientAddress is required
+    if (!body.selfTransfer && !body.recipientAddress) {
+      throw new Error("Missing recipientAddress (required when selfTransfer is false)");
     }
 
     const lucid = await Lucid(
@@ -120,14 +126,18 @@ router.post("/transfer", async (context) => {
     );
 
     lucid.selectWallet.fromSeed(body.secretSeed);
-    
-    const metadataLabel = 674;
-    const metadataContent = body.metadata || { msg: ["Transferring Asset", "Powered by Lucid"] };
 
-    console.log(`Sending ${body.assetUnit} to ${body.recipientAddress}...`);
-    
+    // CENTRALIZED CUSTODY: If selfTransfer, send to own wallet address
+    const walletAddress = await lucid.wallet().address();
+    const recipientAddress = body.selfTransfer ? walletAddress : body.recipientAddress;
+
+    const metadataLabel = 674;
+    const metadataContent = body.metadata || { msg: ["Status Update", "Powered by Lucid"] };
+
+    console.log(`[${body.selfTransfer ? 'SELF-TRANSFER' : 'TRANSFER'}] ${body.assetUnit} -> ${recipientAddress}`);
+
     const tx = await lucid.newTx()
-      .pay.ToAddress(body.recipientAddress, { [body.assetUnit]: 1n })
+      .pay.ToAddress(recipientAddress, { [body.assetUnit]: 1n })
       .attachMetadata(metadataLabel, metadataContent)
       .complete();
 
@@ -139,7 +149,7 @@ router.post("/transfer", async (context) => {
     context.response.body = {
       status: "success",
       txHash,
-      message: "Asset transferred with metadata"
+      message: body.selfTransfer ? "Status updated (self-transfer)" : "Asset transferred with metadata"
     };
 
   } catch (error) {

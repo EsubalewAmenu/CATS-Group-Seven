@@ -101,15 +101,14 @@ export interface TransferResponse {
 }
 
 /**
- * Transfer a token to the processor wallet with updated metadata
- * @param isFirstTransfer - true for minting→processor, false for processor→processor (self-transfer)
+ * Update token status with metadata (Centralized Custody model)
+ * Token stays in minting wallet, metadata is updated via self-transfer
  */
 export async function transferToken(
     assetUnit: string,
     status: string,
     description?: string,
-    note?: string,
-    isFirstTransfer: boolean = false
+    note?: string
 ): Promise<TransferResponse> {
     try {
         const response = await fetch('/.netlify/functions/transfer', {
@@ -119,8 +118,7 @@ export async function transferToken(
                 assetUnit,
                 status,
                 description: description || '',
-                note: note || '',
-                isFirstTransfer
+                note: note || ''
             }),
         });
 
@@ -150,6 +148,7 @@ export async function transferToken(
         if (error instanceof MintError) {
             throw error;
         }
-        throw new MintError(`Failed to transfer: ${(error as Error).message}`);
+        throw new MintError(`Failed to update status: ${(error as Error).message}`);
     }
 }
+
