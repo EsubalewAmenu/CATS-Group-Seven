@@ -92,8 +92,9 @@ export default function StatusUpdate({ batch, onSuccess }: StatusUpdateProps) {
           notes: formData.note || `Status updated to ${formData.status}`
         });
       } catch (dbError) {
-        console.warn('Failed to update batch status in database:', dbError);
-        // Don't fail the whole operation, blockchain transfer succeeded
+        console.error('Failed to update batch status in database:', dbError);
+        setError('Blockchain transfer succeeded, but database update failed. Please contact support.');
+        // We still call onSuccess because the money moved, but the UI might be out of sync
       }
 
       if (onSuccess) {
