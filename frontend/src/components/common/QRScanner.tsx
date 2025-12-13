@@ -120,22 +120,25 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
 
     return (
         <div className="space-y-4">
-            {/* Scanner Container */}
-            <div className="bg-gray-900 rounded-lg p-4 max-w-sm mx-auto">
+            {/* Scanner Container Area */}
+            <div className="bg-gray-900 rounded-lg p-4 max-w-sm mx-auto relative min-h-[300px]">
+
+                {/* 1. The Scanner DOM element - React MUST NOT touch its children */}
+                {/* We use a key to force re-creation if we strictly need to, but here we just leave it empty */}
                 <div
                     id={containerId}
-                    className="rounded-lg overflow-hidden bg-black"
-                    style={{ width: '100%', minHeight: '300px' }} // Fixed height to prevent layout shift
-                >
-                    {!isScanning && (
-                        <div className="h-[300px] bg-gradient-to-br from-purple-500 to-pink-600 rounded flex items-center justify-center">
-                            <div className="text-center text-white p-4">
-                                <div className="text-4xl mb-2">📷</div>
-                                <p className="text-sm opacity-75">Camera will appear here</p>
-                            </div>
+                    className="rounded-lg overflow-hidden bg-black w-full h-full absolute inset-0 z-10"
+                />
+
+                {/* 2. The Placeholder Overlay - React manages this safely */}
+                {!isScanning && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+                        <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg m-4 p-8 text-center text-white shadow-lg w-full h-[80%] flex flex-col justify-center items-center">
+                            <div className="text-4xl mb-4">📷</div>
+                            <p className="text-sm opacity-90 font-medium">Camera will appear here</p>
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
 
             {/* Error Display */}
@@ -146,7 +149,7 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
             )}
 
             {/* Controls */}
-            <div className="flex justify-center">
+            <div className="flex justify-center relative z-30">
                 {!isScanning ? (
                     <Button onClick={startScanning} size="lg">
                         📷 Start Camera Scan
