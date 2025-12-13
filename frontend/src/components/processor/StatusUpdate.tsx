@@ -20,13 +20,35 @@ const PROCESSING_STATUSES = [
   { value: 'exported', label: 'Ready for Export', description: 'Beans are packaged and ready to ship' }
 ];
 
+// Helper to get index of a status in the processing pipeline
+const getStatusIndex = (status: string): number => {
+  const idx = PROCESSING_STATUSES.findIndex(s => s.value === status);
+  // For non-processing statuses like 'harvested', return -1
+  return idx;
+};
+
+// Helper to get the next available stage
+const getNextStage = (currentStatus: string): string => {
+  const currentIdx = getStatusIndex(currentStatus);
+  // If status is not in our list (e.g., 'harvested'), return first stage
+  if (currentIdx === -1) return PROCESSING_STATUSES[0].value;
+  // If already at last stage, return last stage (user shouldn't be here)
+  if (currentIdx >= PROCESSING_STATUSES.length - 1) return PROCESSING_STATUSES[PROCESSING_STATUSES.length - 1].value;
+  // Return next stage
+  return PROCESSING_STATUSES[currentIdx + 1].value;
+};
+
 export default function StatusUpdate({ batch, onSuccess }: StatusUpdateProps) {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Determine which stages are completed based on batch status
+  const currentStatusIdx = batch ? getStatusIndex(batch.status) : -1;
+
   const [formData, setFormData] = useState({
-    status: 'washed',
+    status: batch ? getNextStage(batch.status) : 'washed',
     description: '',
     note: ''
   });
@@ -184,20 +206,36 @@ export default function StatusUpdate({ batch, onSuccess }: StatusUpdateProps) {
               New Processing Status *
             </label>
             <div className="grid gap-2">
-              {PROCESSING_STATUSES.map((status) => (
-                <button
-                  key={status.value}
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, status: status.value }))}
-                  className={`p-4 border-2 rounded-lg text-left transition ${formData.status === status.value
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                >
-                  <div className="font-medium text-gray-800">{status.label}</div>
-                  <div className="text-sm text-gray-600">{status.description}</div>
-                </button>
-              ))}
+              {PROCESSING_STATUSES.map((status, idx) => {
+                const isCompleted = idx <= currentStatusIdx;
+                const isSelected = formData.status === status.value;
+
+                return (
+                  <button
+                    key={status.value}
+                    type="button"
+                    disabled={isCompleted}
+                    onClick={() => !isCompleted && setFormData(prev => ({ ...prev, status: status.value }))}
+                    className={`p-4 border-2 rounded-lg text-left transition relative ${isCompleted
+                      ? 'border-gray-200 bg-gray-100 cursor-not-allowed opacity-60'
+                      : isSelected
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                  >
+                    {isCompleted && (
+                      <span className="absolute top-3 right-3 text-green-600 text-lg">✓</span>
+                    )}
+                    <div className={`font-medium ${isCompleted ? 'text-gray-500' : 'text-gray-800'}`}>
+                      {status.label}
+                      {isCompleted && <span className="ml-2 text-xs text-gray-400">(Completed)</span>}
+                    </div>
+                    <div className={`text-sm ${isCompleted ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {status.description}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -254,6 +292,6 @@ export default function StatusUpdate({ batch, onSuccess }: StatusUpdateProps) {
           </pre>
         </div>
       </CardContent>
-    </Card>
+    </Card >
   );
 }

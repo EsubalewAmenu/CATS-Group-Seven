@@ -7,25 +7,56 @@ import { supabase } from '../../lib/supabase';
 export default function RoleSelector() {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [loadingRole, setLoadingRole] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    const fetchUserAndRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+
+      if (user) {
+        // Fetch user role from database
+        const { data: profile } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        if (profile) {
+          setUserRole((profile as any).role);
+        }
+      }
+    };
+
+    fetchUserAndRole();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (!session?.user) {
+        setUserRole(null);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
   const handleRoleSelect = async (roleId: string) => {
+    // Always require login if not logged in
     if (!user) {
-      // Redirect to login page with role parameter
       navigate(`/login?role=${roleId}`);
       return;
     }
-    // User is logged in, go directly to dashboard
+
+    // If user is logged in but trying to access a different role, require re-login
+    if (userRole && userRole !== roleId) {
+      // Sign out first, then redirect to login with new role
+      await supabase.auth.signOut();
+      navigate(`/login?role=${roleId}`);
+      return;
+    }
+
+    // User is logged in with correct role, go to dashboard
     navigate(`/${roleId}`);
   };
 
