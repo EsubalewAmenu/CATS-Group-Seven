@@ -106,56 +106,91 @@ router.post("/mint", async (context) => {
     context.response.body = { error: error.message };
   }
 });
+
 router.post("/transfer", async (context) => {
   try {
     const body = await context.request.body({ type: "json" }).value;
 
-    // For selfTransfer mode, recipientAddress is optional (we derive it from seed)
     if (!body.blockfrostKey || !body.secretSeed || !body.assetUnit) {
       throw new Error("Missing required fields: blockfrostKey, secretSeed, assetUnit");
-    }
-
-    // If not selfTransfer mode, recipientAddress is required
-    if (!body.selfTransfer && !body.recipientAddress) {
-      throw new Error("Missing recipientAddress (required when selfTransfer is false)");
     }
 
     const lucid = await Lucid(
       new Blockfrost("https://cardano-preprod.blockfrost.io/api/v0", body.blockfrostKey),
       "Preprod"
     );
-
     lucid.selectWallet.fromSeed(body.secretSeed);
 
-    // CENTRALIZED CUSTODY: If selfTransfer, send to own wallet address
     const walletAddress = await lucid.wallet().address();
-    const recipientAddress = body.selfTransfer ? walletAddress : body.recipientAddress;
+    
+    const finalRecipient = body.selfTransfer ? walletAddress : body.recipientAddress;
+
+    if (!finalRecipient) {
+        throw new Error("Recipient address is missing and selfTransfer is false");
+    }
 
     const metadataLabel = 674;
-    const metadataContent = body.metadata || { msg: ["Status Update", "Powered by Lucid"] };
+    const metadataContent = body.metadata || { msg: ["Status Update", "Powered by EthioCoffee"] };
 
-    console.log(`[${body.selfTransfer ? 'SELF-TRANSFER' : 'TRANSFER'}] ${body.assetUnit} -> ${recipientAddress}`);
+    console.log(`[${body.selfTransfer ? 'SELF-TRANSFER' : 'TRANSFER'}] ${body.assetUnit} -> ${finalRecipient}`);
 
-    const tx = await lucid.newTx()
-      .pay.ToAddress(recipientAddress, { [body.assetUnit]: 1n })
-      .attachMetadata(metadataLabel, metadataContent)
-      .complete();
+    const MAX_RETRIES = 5;
+    const RETRY_DELAY = 5000;
 
-    const signedTx = await tx.sign.withWallet().complete();
-    const txHash = await signedTx.submit();
+    for (let i = 0; i < MAX_RETRIES; i++) {
+      try {
+        const tx = await lucid.newTx()
+          .pay.ToAddress(finalRecipient, { [body.assetUnit]: 1n })
+          .attachMetadata(metadataLabel, metadataContent)
+          .complete();
 
-    console.log("Transfer successful:", txHash);
+        const signedTx = await tx.sign.withWallet().complete();
+        const txHash = await signedTx.submit();
+        
+        await new Promise(res => setTimeout(res, 1000));
+        
+        console.log(`[SUCCESS] Tx Hash: ${txHash}`);
 
-    context.response.body = {
-      status: "success",
-      txHash,
-      message: body.selfTransfer ? "Status updated (self-transfer)" : "Asset transferred with metadata"
-    };
+        context.response.body = {
+          status: "success",
+          txHash,
+          message: body.selfTransfer ? "Status updated (self-transfer)" : "Asset transferred"
+        };
+        return;
 
-  } catch (error) {
-    console.error("TRANSFER ERROR:", error);
+      } catch (innerError) {
+        const errString = JSON.stringify(innerError);
+
+        if (errString.includes("BadInputsUTxO") || errString.includes("ValueNotConservedUTxO")) {
+            console.warn("[WARNING] Double-spend detected. Blockfrost is lagging.");
+            
+            context.response.status = 429;
+            context.response.body = {
+                status: "retry_later",
+                error: "Transaction pending. Your previous transaction is still processing. Please wait 30 seconds."
+            };
+            return;
+        }
+
+        // Only retry for actual "Not enough funds" (which might mean waiting for change)
+        // or other network blips.
+        if (i < MAX_RETRIES - 1) {
+             console.log(`Attempt ${i + 1} failed: ${innerError.message || "Network error"}. Retrying in 5s...`);
+             await new Promise(res => setTimeout(res, RETRY_DELAY));
+        } else {
+             // If we ran out of retries, throw to the global catcher
+             throw innerError;
+        }
+      }
+    }
+
+  } catch (globalError) {
+    console.error("[SERVER ERROR]", globalError);
     context.response.status = 500;
-    context.response.body = { error: error instanceof Error ? error.message : String(error) };
+    context.response.body = { 
+        status: "error", 
+        message: globalError.message || "An unexpected error occurred" 
+    };
   }
 });
 
