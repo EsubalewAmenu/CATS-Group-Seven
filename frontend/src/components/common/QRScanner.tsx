@@ -24,9 +24,12 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
         checkMobile();
     }, []);
 
+    const [isStarting, setIsStarting] = useState(false);
+
     const startScanning = async () => {
         setError(null);
-        if (isScanning) return;
+        if (isScanning || isStarting) return;
+        setIsStarting(true);
 
         try {
             // Always create a new instance to ensure fresh state
@@ -34,47 +37,41 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
                 scannerRef.current = new Html5Qrcode(containerId);
             }
 
-            // detailed constraints to prefer back camera and manage resolution
-            const constraints = {
-                facingMode: { exact: "environment" },
-                width: { min: 640, ideal: 1280, max: 1920 },
-                height: { min: 480, ideal: 720, max: 1080 }
-            };
-
-            // Fallback strategy: try exact environment first, then loose environment
-            try {
-                await scannerRef.current.start(
-                    constraints,
-                    {
-                        fps: 10, // Increased back to 10 for better detection
-                        qrbox: { width: 250, height: 250 },
-                        aspectRatio: 1.0
-                    },
-                    (decodedText) => {
-                        handleScanSuccess(decodedText);
-                    },
-                    (errorMessage) => {
-                        // ignore
-                    }
-                );
-            } catch (e) {
-                console.warn("Exact environment camera failed, trying loose mode", e);
-                // Fallback to basic environment preference without resolution constraints (safer)
-                await scannerRef.current.start(
-                    { facingMode: "environment" },
-                    {
-                        fps: 10,
-                        qrbox: { width: 250, height: 250 },
-                        aspectRatio: 1.0
-                    },
-                    (decodedText) => {
-                        handleScanSuccess(decodedText);
-                    },
-                    (errorMessage) => {
-                        // ignore
-                    }
-                );
+            // 1. Get available cameras
+            const devices = await Html5Qrcode.getCameras();
+            if (!devices || devices.length === 0) {
+                throw new Error("No cameras found");
             }
+
+            // 2. Find back camera (heuristic: label contains 'back' or 'environment')
+            // If not found, default to the last camera (often back on mobile)
+            let cameraId = devices[0].id;
+            const backCamera = devices.find(d =>
+                d.label.toLowerCase().includes('back') ||
+                d.label.toLowerCase().includes('environment')
+            );
+
+            if (backCamera) {
+                cameraId = backCamera.id;
+            } else if (devices.length > 1) {
+                cameraId = devices[devices.length - 1].id;
+            }
+
+            // 3. Start scanning with specific device ID
+            await scannerRef.current.start(
+                cameraId,
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0
+                },
+                (decodedText) => {
+                    handleScanSuccess(decodedText);
+                },
+                (errorMessage) => {
+                    // Ignore continuous scan errors
+                }
+            );
 
             setIsScanning(true);
         } catch (err: any) {
@@ -82,9 +79,23 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
             const errorMessage = err?.message || 'Failed to access camera';
             setError(errorMessage);
             setIsScanning(false);
+
+            // Clean up if start failed
+            try {
+                if (scannerRef.current) {
+                    // If we are strictly not scanning, we might not need to stop, 
+                    // but clearing lock is good.
+                    // clearing innerHTML handled by React unmount or next start
+                }
+            } catch (cleanupErr) {
+                console.warn("Cleanup after fail error", cleanupErr);
+            }
+
             if (onScanError) {
                 onScanError(errorMessage);
             }
+        } finally {
+            setIsStarting(false);
         }
     };
 
