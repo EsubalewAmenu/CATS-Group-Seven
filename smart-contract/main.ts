@@ -194,6 +194,44 @@ router.post("/transfer", async (context) => {
   }
 });
 
+
+router.post("/split", async (context) => {
+  const body = await context.request.body({ type: "json" }).value;
+  if (!body.blockfrostKey || !body.secretSeed ) {
+      throw new Error("Missing required fields");
+  }
+
+  const lucid = await Lucid(
+    new Blockfrost("https://cardano-preprod.blockfrost.io/api/v0", body.blockfrostKey),
+    "Preprod"
+  );
+
+  lucid.selectWallet.fromSeed(body.secretSeed);
+
+  // We created 10 smaller UTxOs of 50 ADA each
+  // This allows 10 simultaneous transactions per block
+  const addr: Address = await lucid.wallet().address();
+  console.log("Wallet Address:", addr);
+
+  const tx = await lucid.newTx()
+    .pay.ToAddress(addr, { lovelace: 50000000n }) // 50 ADA
+    .pay.ToAddress(addr, { lovelace: 50000000n })
+    .pay.ToAddress(addr, { lovelace: 50000000n })
+    .pay.ToAddress(addr, { lovelace: 50000000n })
+    .pay.ToAddress(addr, { lovelace: 50000000n })
+    .complete();
+
+  const signedTx = await tx.sign.withWallet().complete();
+  const txHash = await signedTx.submit();
+
+  console.log(`Wallet split successful: ${txHash}`);
+  context.response.body = {
+    status: "success",
+    message: "Wallet split successful",
+    txHash,
+    };
+});
+
 const app = new Application();
 app.use(router.routes());
 app.use(router.allowedMethods());
